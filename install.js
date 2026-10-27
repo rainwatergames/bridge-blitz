@@ -6,6 +6,8 @@
 (function () {
   'use strict';
   var me = document.currentScript, NAME = (me && me.dataset.name) || document.title, SCREENS = ((me && me.dataset.screens) || '').split(',').filter(Boolean);
+  /* data-gate="__UF.state=title|shop": show only while window.__UF.state is one of those values; data-bottom: lift the button */
+  var GATE = (me && me.dataset.gate) ? /^([\w$]+)\.([\w$]+)=(.+)$/.exec(me.dataset.gate) : null, BOTTOM = (me && me.dataset.bottom) || '14px';
   var ua = navigator.userAgent, IOS = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1), AND = /Android/.test(ua);
   var PLAT = IOS ? 'iPhone' : AND ? 'Android' : 'PC';
   var WANT = /[?&]install=1\b/.test(location.search);
@@ -14,7 +16,7 @@
   }
   if (installed()) return;
   var deferred = null, done = false, ver = '', btn, ov;
-  var css = '.rgi-b{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:2147483000;display:none;align-items:center;gap:8px;max-width:calc(100vw - 24px);padding:12px 20px;border:0;border-radius:999px;font:800 15px/1.15 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#0b0f1e;background:linear-gradient(90deg,#22d3ee,#a78bfa,#f472b6);box-shadow:0 6px 24px rgba(0,0,0,.45),0 0 18px rgba(167,139,250,.6);cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent}' +
+  var css = '.rgi-b{position:fixed;left:50%;bottom:calc(' + BOTTOM + ' + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:2147483000;display:none;align-items:center;gap:8px;width:max-content;max-width:calc(100vw - 24px);padding:12px 20px;border:0;border-radius:999px;font:800 clamp(12px,3.7vw,15px)/1.2 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#0b0f1e;background:linear-gradient(90deg,#22d3ee,#a78bfa,#f472b6);box-shadow:0 6px 24px rgba(0,0,0,.45),0 0 18px rgba(167,139,250,.6);cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent}' +
     '.rgi-b svg{width:18px;height:18px;flex:none}.rgi-b.on{display:flex}.rgi-b.want{animation:rgiP 1s ease-in-out infinite}@keyframes rgiP{50%{transform:translateX(-50%) scale(1.07)}}' +
     '.rgi-o{position:fixed;inset:0;z-index:2147483001;background:rgba(5,6,16,.82);display:none;align-items:flex-end;justify-content:center;padding:16px;font:16px/1.35 system-ui,-apple-system,sans-serif;color:#fff}.rgi-o.on{display:flex}' +
     '.rgi-c{width:100%;max-width:380px;background:#141a33;border:1px solid #ffffff2a;border-radius:22px;padding:18px 18px 14px;box-shadow:0 20px 60px #000}.rgi-c h3{margin:0 0 12px;font-size:18px}' +
@@ -26,6 +28,7 @@
   var ADD = '<svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/></svg>';
   function label() { return 'Install ' + NAME + (ver ? ' v' + ver : '') + ' for ' + PLAT; }
   function screenOn() {
+    if (GATE) { var o = window[GATE[1]]; return !!o && GATE[3].split('|').indexOf(String(o[GATE[2]])) >= 0; }
     if (!SCREENS.length) return true;
     return SCREENS.some(function (s) { var e = document.querySelector(s); return e && !e.classList.contains('hide') && !e.hidden && e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden'; });
   }
