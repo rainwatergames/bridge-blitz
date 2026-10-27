@@ -1,0 +1,146 @@
+<!doctype html>
+<!-- (c) 2026 Rainwater Games - Jeff Rainwater. All rights reserved. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="author" content="Rainwater Games (Jeff Rainwater)">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#2f7fe8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="description" content="Bridge Blitz: lead your squad across the bridge, grow your army and smash the horde. Works offline.">
+<title>Bridge Blitz</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preload" href="fonts/LilitaOne-Regular.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="stylesheet" href="style.css">
+<style>
+#splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 40%,#2b6fb8,#0d2547);color:#fff;font-family:"Lilita One",system-ui,sans-serif;transition:opacity .35s;text-align:center}
+#splash.gone{opacity:0;pointer-events:none}
+#splash .st{font-size:56px;line-height:.95;letter-spacing:2px;text-shadow:0 4px 0 #0a1a33}#splash .st b{display:block;color:#ffd23a}
+#splash .sp{margin-top:10px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:.75;font-family:system-ui,sans-serif}
+#splash .ld{margin-top:34px;font-size:18px;letter-spacing:.08em}
+#splash .ld i{display:inline-block;width:7px;height:7px;margin-left:4px;border-radius:50%;background:#fff;animation:sdot 1s infinite ease-in-out}
+#splash .ld i:nth-child(2){animation-delay:.15s}#splash .ld i:nth-child(3){animation-delay:.3s}
+@keyframes sdot{0%,80%,100%{transform:translateY(0);opacity:.5}40%{transform:translateY(-8px);opacity:1}}
+#splash .bar{margin-top:16px;width:180px;height:6px;border-radius:3px;background:rgba(255,255,255,.18);overflow:hidden}
+#splash .bar i{display:block;width:40%;height:100%;border-radius:3px;background:#ffd23a;animation:sbar 1.1s infinite ease-in-out}
+@keyframes sbar{0%{transform:translateX(-100%)}100%{transform:translateX(250%)}}
+</style>
+</head>
+<body>
+<div id="splash" aria-label="Loading"><div class="st">BRIDGE<b>BLITZ</b></div><div class="sp">A Rainwater Games production</div><div class="ld">Loading<i></i><i></i><i></i></div><div class="bar"><i></i></div></div>
+<canvas id="c"></canvas>
+<div id="labels"></div>
+<div id="hud" class="hidden">
+  <div class="top">
+    <div class="lvl" id="lvlPill">LEVEL 1</div>
+    <div class="prog"><div class="bar"><i id="progFill"></i></div>
+      <svg class="skull" viewBox="0 0 24 24"><path fill="#fff" stroke="#7a1208" stroke-width="1.6" d="M12 2C6.5 2 3 5.8 3 10.5c0 2.6 1.2 4.4 3 5.5V20h3v-2h2v2h2v-2h2v2h3v-4c1.8-1.1 3-2.9 3-5.5C21 5.8 17.5 2 12 2z"/><circle cx="8.5" cy="11" r="2.2" fill="#7a1208"/><circle cx="15.5" cy="11" r="2.2" fill="#7a1208"/></svg>
+    </div>
+    <div class="coins pill"><i class="cn"></i><b>0</b></div>
+    <button id="pauseBtn" class="icon" aria-label="Pause"><svg viewBox="0 0 24 24"><rect x="6" y="5" width="4.2" height="14" rx="1.2" fill="#fff"/><rect x="13.8" y="5" width="4.2" height="14" rx="1.2" fill="#fff"/></svg></button>
+    <button id="muteBtn" class="icon" aria-label="Mute"><svg viewBox="0 0 24 24"><path fill="#fff" d="M4 9h4l5-4v14l-5-4H4z"/><path class="wave" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" d="M16 8.5c1.2 1 1.8 2.2 1.8 3.5s-.6 2.5-1.8 3.5M18.6 6c2 1.6 3 3.6 3 6s-1 4.4-3 6"/><path class="x" stroke="#fff" stroke-width="2.4" stroke-linecap="round" d="M16.5 9l5 6M21.5 9l-5 6"/></svg></button>
+  </div>
+  <div id="wchip"></div>
+  <div id="consBar"></div>
+  <div id="cycBadge"></div>
+</div>
+<div id="banner"></div>
+<div id="mvToast"></div>
+<div id="bossIntro"></div>
+<div id="hint"><div class="hand">👆</div><span>Drag to steer · up/down to rush or brake</span></div>
+
+<div id="menu" class="screen show">
+  <div class="coins pill corner"><i class="cn"></i><b>0</b></div>
+  <button id="settingsBtn" class="icon gear" aria-label="Settings"><svg viewBox="0 0 24 24"><path fill="#fff" d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L14.9 3h-4l-.4 2.9a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.4 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1c.5.4 1.1.8 1.7 1l.4 2.9h4l.4-2.9c.6-.2 1.2-.6 1.7-1l2.5 1 2-3.5zM12.9 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg></button>
+  <div class="title"><span class="t1">BRIDGE</span><span class="t2">BLITZ</span></div>
+  <p class="tag">Grow your squad. Smash the horde.</p>
+  <p class="rwg">A Rainwater Games production</p>
+  <div class="ver menu-ver" id="menuVer"></div>
+  <div class="spacer"></div>
+  <div class="lvlSel"><button class="arrow" id="lvlPrev" aria-label="Previous level">&#9664;</button><div class="menuLevel" id="menuLevel">LEVEL 1</div><button class="arrow" id="lvlNext" aria-label="Next level">&#9654;</button></div>
+  <p class="sub lvlNote" id="lvlNote"></p>
+  <div id="moveBanner" style="display:none"><b>We moved!</b> <span>Bridge Blitz has a permanent home. Bring your progress along:</span><button class="btn shop" id="moveBtn">MOVE MY PROGRESS</button></div>
+  <button class="btn big go" id="playBtn">PLAY</button>
+  <button class="btn shop" id="menuShopBtn">UPGRADES</button>
+  <button class="btn shop ach" id="menuAchBtn">ACHIEVEMENTS</button>
+  <p class="sub" id="menuBest">Drag left &amp; right to steer</p>
+  <p class="copy">© 2026 Rainwater Games (Jeff Rainwater). All rights reserved.</p>
+</div>
+<div id="win" class="screen">
+  <div class="panel">
+    <div class="stars"><span class="star">★</span><span class="star mid">★</span><span class="star">★</span></div>
+    <h2 id="winTitle">LEVEL 1</h2>
+    <h1 class="gold">CLEARED!</h1>
+    <div class="stats"><div><b id="winSurv">0</b><span>survivors</span></div><div><b id="winPeak">0</b><span>peak squad</span></div></div>
+    <div class="earn"><i class="cn"></i><b id="winCoins">+0</b><span>coins</span></div>
+    <button class="btn big go" id="nextBtn">NEXT LEVEL</button>
+    <button class="btn shop" id="winShopBtn">UPGRADES</button>
+    <button class="btn small ghost" id="winHomeBtn">MAIN MENU</button>
+    <p class="copy">© 2026 Rainwater Games (Jeff Rainwater). All rights reserved.</p>
+  </div>
+</div>
+<div id="lose" class="screen">
+  <div class="panel">
+    <h1 class="red">SQUAD WIPED</h1>
+    <h2 id="loseLevel">Level 1</h2>
+    <p class="sub">Shoot red gates to flip them, break crates for weapons, free heroes, and turn the crane to your side.</p>
+    <div class="earn"><i class="cn"></i><b id="loseCoins">+0</b><span>coins</span></div>
+    <div class="bal" id="loseBal"></div>
+    <p class="skipMsg" id="skipMsg" style="display:none"></p>
+    <button class="btn skip" id="loseSkipBtn" style="display:none">SKIP LEVEL</button>
+    <button class="btn big retry" id="retryBtn">TRY AGAIN</button>
+    <button class="btn shop" id="loseShopBtn">UPGRADES</button>
+    <button class="btn small ghost" id="homeBtn">MAIN MENU</button>
+    <p class="copy">© 2026 Rainwater Games (Jeff Rainwater). All rights reserved.</p>
+  </div>
+</div>
+<div id="pause" class="screen">
+  <div class="panel">
+    <h1>PAUSED</h1>
+    <h2 id="pauseLevel">Level 1</h2>
+    <button class="btn big go" id="resumeBtn">RESUME</button>
+    <button class="btn retry mid" id="restartBtn">RESTART LEVEL</button>
+    <button class="btn shop" id="pauseSetBtn">SETTINGS</button>
+    <button class="btn small ghost" id="quitBtn">MAIN MENU</button>
+    <div class="ver" id="pauseVer"></div>
+  </div>
+</div>
+<div id="settings" class="screen">
+  <div class="panel">
+    <h1>SETTINGS</h1>
+    <div class="volRow"><label for="volSlider">SOUND</label><input type="range" id="volSlider" min="0" max="100" step="1" value="100" aria-label="Sound volume"><b id="volVal">100%</b></div>
+    <button class="btn small ghost" id="setMute">SOUND: ON</button>
+    <div id="setMenuOnly">
+    <p class="sub" id="setInfo">Reached level 1</p>
+    <div class="setGrid" id="lvlGrid"></div>
+    <button class="btn reset" id="resetLvlBtn">START OVER<small>Back to level 1 &middot; keep coins &amp; upgrades</small></button>
+    <button class="btn reset danger" id="resetAllBtn">RESET PROGRESS<small>Wipe level, coins &amp; upgrades</small></button>
+    </div>
+    <button class="btn small ghost" id="setBack">BACK</button>
+    <div class="ver" id="setVer"></div>
+  </div>
+</div>
+<div id="confirm" class="screen">
+  <div class="panel warn">
+    <h1 id="cfTitle">SURE?</h1>
+    <p class="sub" id="cfText"></p>
+    <button class="btn retry mid" id="cfYes">YES, RESET</button>
+    <button class="btn small ghost" id="cfNo">CANCEL</button>
+  </div>
+</div>
+<div id="shop" class="screen">
+  <div class="shopHead"><button class="btn small ghost" id="shopBack">BACK</button><h1>ARMORY</h1><div class="coins pill"><i class="cn"></i><b>0</b></div></div>
+  <div id="shopList"></div>
+</div>
+<div id="ach" class="screen">
+  <div class="shopHead"><button class="btn small ghost" id="achBack">BACK</button><h1>TROPHIES</h1><div class="coins pill"><i class="cn"></i><b>0</b></div></div>
+  <p class="sub achSum" id="achSum"></p>
+  <div id="achList"></div>
+</div>
+<div id="achToast"></div>
+<script src="game.js"></script>
+</body>
+</html>
