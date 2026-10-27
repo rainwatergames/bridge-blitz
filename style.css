@@ -263,3 +263,4 @@ body:not(.ready) #c { opacity: 0; } #c { transition: opacity .6s; }
 #moveBanner .btn { margin: 0 auto; }
 #mvToast { position: fixed; left: 50%; top: 18%; transform: translate(-50%, -20px); opacity: 0; transition: .35s; z-index: 60; padding: 12px 20px; border-radius: 16px; background: rgba(20,110,50,.95); border: 3px solid #7dffa0; font-size: 20px; pointer-events: none; white-space: nowrap; }
 #mvToast.show { opacity: 1; transform: translate(-50%, 0); }
+#mvToast.up { background: rgba(30,80,170,.96); border-color: #9cc8ff; cursor: pointer; }

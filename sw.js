@@ -1,5 +1,5 @@
-// Bump CACHE together with VERSION in src/main.js (v5.8.0 <-> crowd-runner-v5-8-0).
-var CACHE = 'crowd-runner-v5-8-0';
+// Bump CACHE together with VERSION in src/main.js (v5.8.1 <-> crowd-runner-v5-8-1).
+var CACHE = 'crowd-runner-v5-8-1';
 var ASSETS = ['./', './index.html', './style.css', './game.js', './manifest.json',
   './fonts/LilitaOne-Regular.ttf', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png'];
 self.addEventListener('install', function (e) {
@@ -14,10 +14,13 @@ self.addEventListener('fetch', function (e) {
   if (e.request.method !== 'GET') return;
   var url = new URL(e.request.url);
   if (url.origin !== location.origin) return;
+  // v5.8.1: version.json always straight from the network (never cached), so a stale client can find out it is stale
+  if (/\/version\.json$/.test(url.pathname)) { e.respondWith(fetch(e.request, { cache: 'no-store' })); return; }
   var core = e.request.mode === 'navigate' || /\/(index\.html|game\.js|style\.css|sw\.js)?$/.test(url.pathname);
   if (core) {
     // Network first for the app shell so updates show up on the next open; cache when offline.
-    e.respondWith(fetch(e.request).then(function (res) {
+    // v5.8.1: cache:'no-cache' revalidates with the server, so GitHub Pages' max-age=600 can't hand back a stale build
+    e.respondWith(fetch(e.request, { cache: 'no-cache' }).then(function (res) {
       if (res.ok) { var copy = res.clone(); caches.open(CACHE).then(function (c) { c.put(e.request, copy); }); }
       return res;
     }).catch(function () { return caches.match(e.request, { ignoreSearch: true }).then(function (h) { return h || caches.match('./index.html'); }); }));
