@@ -1,5 +1,5 @@
 // Bump CACHE together with VERSION in src/main.js (v5.8.5 <-> crowd-runner-v5-10-1).
-var CACHE = 'crowd-runner-v5-10-1';
+var CACHE = 'crowd-runner-v5-10-2';
 var ASSETS = ['./', './index.html', './style.css', './game.js', './install.js', './manifest.json',
   './fonts/LilitaOne-Regular.ttf', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png'];
 self.addEventListener('install', function (e) {
