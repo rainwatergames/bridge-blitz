@@ -15,7 +15,7 @@
     return navigator.standalone === true || ['standalone', 'fullscreen', 'minimal-ui', 'window-controls-overlay'].some(function (m) { return matchMedia('(display-mode: ' + m + ')').matches; });
   }
   if (installed()) return;
-  var deferred = null, done = false, ver = '', btn, ov;
+  var deferred = null, done = false, ver = '', btn, ov, fo, fb = false;
   var css = '.rgi-b{position:fixed;left:50%;bottom:calc(' + BOTTOM + ' + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:2147483000;display:none;align-items:center;gap:8px;width:max-content;max-width:calc(100vw - 24px);padding:12px 20px;border:0;border-radius:999px;font:800 clamp(12px,3.7vw,15px)/1.2 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#0b0f1e;background:linear-gradient(90deg,#22d3ee,#a78bfa,#f472b6);box-shadow:0 6px 24px rgba(0,0,0,.45),0 0 18px rgba(167,139,250,.6);cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent}' +
     '.rgi-b svg{width:18px;height:18px;flex:none}.rgi-b.on{display:flex}.rgi-b.want{animation:rgiP 1s ease-in-out infinite}@keyframes rgiP{50%{transform:translateX(-50%) scale(1.07)}}' +
     '.rgi-o{position:fixed;inset:0;z-index:2147483001;background:rgba(5,6,16,.82);display:none;align-items:flex-end;justify-content:center;padding:16px;font:16px/1.35 system-ui,-apple-system,sans-serif;color:#fff}.rgi-o.on{display:flex}' +
@@ -32,17 +32,19 @@
     if (!SCREENS.length) return true;
     return SCREENS.some(function (s) { var e = document.querySelector(s); return e && !e.classList.contains('hide') && !e.hidden && e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden'; });
   }
-  function available() { return !done && (IOS || deferred); }
+  function available() { return !done && (IOS || deferred || (WANT && fb)); }
   function sync() {
     if (!btn) return;
     if (installed()) done = true;
-    btn.classList.toggle('on', available() && screenOn() && !(ov && ov.classList.contains('on')));
+    btn.classList.toggle('on', available() && screenOn() && !(ov && ov.classList.contains('on')) && !(fo && fo.classList.contains('on')));
     btn.lastChild.textContent = label();
   }
   function openIOS() { ov.classList.add('on'); sync(); }
+  /* No beforeinstallprompt (already installed, or Chrome not offering it yet): show the browser-menu route instead of doing nothing */
+  function openFB() { if (!fo) return; fo.classList.add('on'); btn.classList.toggle('on', false); }
   function go() {
     if (IOS) return openIOS();
-    if (!deferred) return;
+    if (!deferred) return openFB();
     var d = deferred; deferred = null; sync();
     d.prompt();
     (d.userChoice || Promise.resolve({})).then(function (c) { if (c && c.outcome === 'accepted') { done = true; } sync(); });
@@ -63,6 +65,15 @@
     ov.addEventListener('click', function (e) { if (e.target === ov || e.target.className === 'rgi-x') { ov.classList.remove('on'); sync(); } });
     document.body.appendChild(ov);
     fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) { ver = String(j.v || ''); sync(); }).catch(function () {});
+    fo = document.createElement('div'); fo.className = 'rgi-o'; fo.setAttribute('role', 'dialog'); fo.setAttribute('aria-label', 'Install ' + NAME);
+    fo.innerHTML = '<div class="rgi-c"><h3>Install ' + NAME.replace(/</g, '&lt;') + '</h3>' +
+      '<div class="rgi-s"><span class="rgi-n">1</span><span>Tap the <b>&#8942;</b> menu in Chrome</span></div>' +
+      '<div class="rgi-s"><span class="rgi-n">2</span><span>Tap <b>Install app</b> or <b>Add to Home screen</b></span></div>' +
+      '<button type="button" class="rgi-x">Got it</button></div>';
+    ['pointerdown', 'touchstart', 'mousedown', 'click'].forEach(function (t) { fo.addEventListener(t, function (e) { e.stopPropagation(); }, { passive: t !== 'click' }); });
+    fo.addEventListener('click', function (e) { if (e.target === fo || e.target.className === 'rgi-x') { fo.classList.remove('on'); sync(); } });
+    document.body.appendChild(fo);
+    if (WANT && !IOS) setTimeout(function () { fb = true; sync(); }, 2500);
     sync(); setInterval(sync, 400);
     if (WANT && IOS) setTimeout(function () { openIOS(); }, 600);
   }
